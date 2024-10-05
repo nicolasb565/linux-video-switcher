@@ -5,33 +5,26 @@
 extern GMainLoop* mainloop;
 gboolean handleDbusMessages(gpointer user_data);
 
-static void restartPipeline() {
-    VideoPipeline& pipeline = VideoPipeline::getInstance();
-    pipeline.destroyPipeline();
-    pipeline.createPipeline();
-    pipeline.setPipelineState(GST_STATE_PLAYING);
-}
-
 static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
-    GMainLoop *loop = (GMainLoop *) data;
+    GMainLoop* mainloop = (GMainLoop *) data;
 
     switch (GST_MESSAGE_TYPE (msg)) {
 
     case GST_MESSAGE_EOS:
-        g_print ("End of stream\n");
+        std::cout << "End of stream" << std::endl;
         break;
 
     case GST_MESSAGE_ERROR: {
         gchar  *debug;
         GError *error;
 
-        gst_message_parse_error (msg, &error, &debug);
-        g_free (debug);
+        gst_message_parse_error(msg, &error, &debug);
+        g_free(debug);
 
-        g_printerr ("Error: %s\n", error->message);
-        g_error_free (error);
+        std::cout << "Error: " << error->message << std::endl;
+        g_error_free(error);
         
-        restartPipeline();
+        g_main_loop_quit(mainloop);
 
         break;
     }
