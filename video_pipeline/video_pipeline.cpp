@@ -2,6 +2,7 @@
 
 #include "video_pipeline.h"
 
+extern GMainLoop* mainloop;
 gboolean handleDbusMessages(gpointer user_data);
 
 static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
@@ -11,7 +12,6 @@ static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
 
     case GST_MESSAGE_EOS:
         g_print ("End of stream\n");
-        g_main_loop_quit (loop);
         break;
 
     case GST_MESSAGE_ERROR: {
@@ -24,7 +24,6 @@ static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
         g_printerr ("Error: %s\n", error->message);
         g_error_free (error);
 
-        g_main_loop_quit (loop);
         break;
     }
     default:
@@ -50,19 +49,12 @@ bool VideoPipeline::setPipelineState(GstState state, GstClockTime timeout_ns) {
     return true;
 }
 
-void VideoPipeline::runMainloop() {
-    g_main_loop_run (mainloop);
-}
-
 bool VideoPipeline::createPipelineStaticParts() {
-    mainloop = g_main_loop_new(NULL, FALSE);
     pipeline = gst_pipeline_new("video_pipeline");
     
     GstBus* bus = gst_pipeline_get_bus(GST_PIPELINE (pipeline));
     guint bus_watch_id = gst_bus_add_watch(bus, bus_call, mainloop);
     gst_object_unref (bus);
-    
-    g_timeout_add(100, handleDbusMessages, NULL);
     
     GstElement* source = gst_element_factory_make("videotestsrc", "src");
     GstCaps* caps = gst_caps_new_simple("video/x-raw",

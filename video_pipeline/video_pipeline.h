@@ -33,13 +33,11 @@ public:
     bool removeInput(VideoPipelineInput input);
     bool selectInput(VideoPipelineInput input);
     bool setPipelineState(GstState state, GstClockTime timeout_ns);
-    void runMainloop();
-
+    
 protected:
     bool createPipelineStaticParts();
     bool destroyPipeline();
     
-    GMainLoop* mainloop;
     GstElement* pipeline;
 private:
     VideoPipeline() {
