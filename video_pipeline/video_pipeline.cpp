@@ -5,6 +5,13 @@
 extern GMainLoop* mainloop;
 gboolean handleDbusMessages(gpointer user_data);
 
+static void restartPipeline() {
+    VideoPipeline& pipeline = VideoPipeline::getInstance();
+    pipeline.destroyPipeline();
+    pipeline.createPipeline();
+    pipeline.setPipelineState(GST_STATE_PLAYING);
+}
+
 static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
     GMainLoop *loop = (GMainLoop *) data;
 
@@ -23,6 +30,8 @@ static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
 
         g_printerr ("Error: %s\n", error->message);
         g_error_free (error);
+        
+        restartPipeline();
 
         break;
     }
@@ -45,15 +54,15 @@ bool VideoPipeline::selectInput(VideoPipelineInput input) {
     return true;
 }
 
-bool VideoPipeline::setPipelineState(GstState state, GstClockTime timeout_ns) {
-    return true;
+void VideoPipeline::setPipelineState(GstState state) {
+    gst_element_set_state (pipeline, state);
 }
 
-bool VideoPipeline::createPipelineStaticParts() {
+void VideoPipeline::createPipeline() {
     pipeline = gst_pipeline_new("video_pipeline");
     
     GstBus* bus = gst_pipeline_get_bus(GST_PIPELINE (pipeline));
-    guint bus_watch_id = gst_bus_add_watch(bus, bus_call, mainloop);
+    bus_watch_id = gst_bus_add_watch(bus, bus_call, mainloop);
     gst_object_unref (bus);
     
     GstElement* source = gst_element_factory_make("videotestsrc", "src");
@@ -74,11 +83,13 @@ bool VideoPipeline::createPipelineStaticParts() {
     
     gst_bin_add_many(GST_BIN(pipeline), source, caps_filter, queue_src, videoconvert, input_selector, sink, NULL);
     gst_element_link_many(source, caps_filter, queue_src, videoconvert, input_selector, sink, NULL);
-    gst_element_set_state (pipeline, GST_STATE_PLAYING);
-    
-    return true;
 }
 
-bool VideoPipeline::destroyPipeline() {
-    return true;
+void VideoPipeline::destroyPipeline() {
+    if(pipeline) {
+        setPipelineState(GST_STATE_NULL);
+        gst_object_unref (pipeline);
+        g_source_remove (bus_watch_id);
+        pipeline = NULL;
+    }
 }

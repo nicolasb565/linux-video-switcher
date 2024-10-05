@@ -32,15 +32,13 @@ public:
     bool addInput(VideoPipelineInput input);
     bool removeInput(VideoPipelineInput input);
     bool selectInput(VideoPipelineInput input);
-    bool setPipelineState(GstState state, GstClockTime timeout_ns);
+    void setPipelineState(GstState state);
+    void createPipeline();
+    void destroyPipeline();
     
 protected:
-    bool createPipelineStaticParts();
-    bool destroyPipeline();
-    
-    GstElement* pipeline;
+    GstElement* pipeline = NULL;
 private:
-    VideoPipeline() {
-        createPipelineStaticParts();
-    }
+    VideoPipeline() {}
+    guint bus_watch_id;
 };

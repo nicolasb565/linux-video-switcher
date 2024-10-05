@@ -23,9 +23,12 @@ int main(int argc, char* argv[]) {
     g_timeout_add(100, handleDbusMessages, NULL);
     gst_init (&argc, &argv);
     VideoPipeline& pipeline = VideoPipeline::getInstance();
+    pipeline.createPipeline();
+    pipeline.setPipelineState(GST_STATE_PLAYING);
     while(!stop_process) {
         g_main_loop_run(mainloop);
     }
     gst_deinit();
+    g_main_loop_unref(mainloop);
 }
 
