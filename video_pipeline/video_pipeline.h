@@ -20,21 +20,29 @@ struct VideoPipelineInput {
 
 class VideoPipeline {
 public:
-    VideoPipeline() {
-        createPipelineStaticParts();
-    }
     virtual ~VideoPipeline() {
         destroyPipeline();
+    }
+    
+    static VideoPipeline& getInstance() {
+        static VideoPipeline instance;
+        return instance;
     }
 
     bool addInput(VideoPipelineInput input);
     bool removeInput(VideoPipelineInput input);
     bool selectInput(VideoPipelineInput input);
     bool setPipelineState(GstState state, GstClockTime timeout_ns);
-    bool runMainloop();
+    void runMainloop();
 
 protected:
     bool createPipelineStaticParts();
     bool destroyPipeline();
+    
+    GMainLoop* mainloop;
     GstElement* pipeline;
+private:
+    VideoPipeline() {
+        createPipelineStaticParts();
+    }
 };

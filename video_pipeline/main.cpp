@@ -11,19 +11,17 @@ void sighandler(int signum) {
     stop_process = true;
 }
 
-void handleDbusMessages(VideoPipeline& pipeline) {
+gboolean handleDbusMessages(gpointer user_data) {
     //TODO
     //handle setting changes or provide infos about pipeline
+    return G_SOURCE_CONTINUE;
 }
 
 int main(int argc, char* argv[]) {
     gst_init (&argc, &argv);
-    VideoPipeline pipeline;
+    VideoPipeline& pipeline = VideoPipeline::getInstance();
     while(!stop_process) {
-        handleDbusMessages(pipeline);
-        if(!pipeline.runMainloop()) {
-            break;
-        }
+        pipeline.runMainloop();
     }
     gst_deinit();
 }
