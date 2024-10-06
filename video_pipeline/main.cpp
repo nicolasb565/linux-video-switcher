@@ -19,12 +19,28 @@ static gboolean handleDbusMessages(gpointer user_data) {
     return G_SOURCE_CONTINUE;
 }
 
+std::string fcc2s(unsigned int val) {
+    std::string s;
+
+    s += val & 0xff;
+    s += (val >> 8) & 0xff;
+    s += (val >> 16) & 0xff;
+    s += (val >> 24) & 0xff;
+    return s;
+}
+
 static gboolean updateV4l2DeviceList(gpointer user_data) {
     V4L2UdevMonitor& v4l2DevMonitor = V4L2UdevMonitor::getInstance();
     if(v4l2DevMonitor.updateV4L2DeviceList()) {
         std::cout << "New v4l2 device list:" << std::endl;
-        for(auto dev: v4l2DevMonitor.getV4l2DeviceList()) {
-            std::cout << "    " << dev.name << " (" << dev.path << ")" << std::endl;
+        for(auto& dev: v4l2DevMonitor.getV4l2DeviceList()) {
+            std::cout << "    " << dev.devcap.card << " (" << dev.devname << " " << dev.devcap.bus_info << ")" << std::endl;
+            for(auto& format: dev.videoFormats) {
+                std::cout << "        " << format.width << "x" << format.height << " " << fcc2s(format.pixelformat) << std::endl;
+                for(auto& interval: format.frameIntervals) {
+                    std::cout << "            " << (double)interval.denominator / (double)interval.numerator << " fps" << std::endl;
+                }
+            }
         }
     }
     return G_SOURCE_CONTINUE;
