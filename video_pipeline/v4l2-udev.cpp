@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -6,23 +7,75 @@
 
 #include "v4l2-udev.h"
 
-V4L2UdevMonitor::V4L2UdevMonitor() {
-    udev = udev_new();
-    udevMonitor = udev_monitor_new_from_netlink(udev, "udev");
-    udev_monitor_filter_add_match_subsystem_devtype(udevMonitor, "video4linux", NULL);
-    udev_monitor_enable_receiving(udevMonitor);
-    if(!updateV4L2DeviceList()) {
-        v4l2DeviceList = probeDevices();
+bool pixelformatIsCompressed(uint32_t pixelformat) {
+    switch(pixelformat) {
+    case V4L2_PIX_FMT_JPEG:
+    case V4L2_PIX_FMT_MPEG:
+    case V4L2_PIX_FMT_H264:
+    case V4L2_PIX_FMT_H264_NO_SC:
+    case V4L2_PIX_FMT_H264_MVC:
+    case V4L2_PIX_FMT_H263:
+    case V4L2_PIX_FMT_MPEG1:
+    case V4L2_PIX_FMT_MPEG2:
+    case V4L2_PIX_FMT_MPEG4:
+    case V4L2_PIX_FMT_XVID:
+    case V4L2_PIX_FMT_VC1_ANNEX_G:
+    case V4L2_PIX_FMT_VC1_ANNEX_L:
+    case V4L2_PIX_FMT_VP8:
+    case V4L2_PIX_FMT_VP9:
+        return true;
+    default:
+        break;
     }
-}
-    
-V4L2UdevMonitor::~V4L2UdevMonitor() {
-    udev_monitor_unref(udevMonitor);
-    udev_unref(udev);
+    return false;
 }
 
-std::vector<VideoPipelineInput> V4L2UdevMonitor::getV4l2DeviceList() {
-    return v4l2DeviceList;
+bool videoFormatsSortFunction(const VideoFormat& a, const VideoFormat& b) {
+    int scoreA = 0;
+    int scoreB = 0;
+    uint64_t nbrPixelsA = a.width * a.height;
+    uint64_t nbrPixelsB = b.width * b.height;
+    
+    if(nbrPixelsA > nbrPixelsB) {
+        scoreA++;
+    }
+    else if(nbrPixelsB > nbrPixelsA) {
+        scoreB++;
+    }
+    
+    if(pixelformatIsCompressed(a.pixelformat)) {
+        scoreA--;
+    }
+    if(pixelformatIsCompressed(b.pixelformat)) {
+        scoreB--;
+    }
+    
+    return scoreA > scoreB;
+}
+
+bool pixelFormatIsSupported(uint32_t pixelformat) {
+    //we assume all uncompressed formats are supported
+    //videoconvert should handle any issues
+    
+    //we do not support compressed formats other than jpeg/mjpg for now
+    switch(pixelformat) {
+    case V4L2_PIX_FMT_H264:
+    case V4L2_PIX_FMT_H264_NO_SC:
+    case V4L2_PIX_FMT_H264_MVC:
+    case V4L2_PIX_FMT_H263:
+    case V4L2_PIX_FMT_MPEG1:
+    case V4L2_PIX_FMT_MPEG2:
+    case V4L2_PIX_FMT_MPEG4:
+    case V4L2_PIX_FMT_XVID:
+    case V4L2_PIX_FMT_VC1_ANNEX_G:
+    case V4L2_PIX_FMT_VC1_ANNEX_L:
+    case V4L2_PIX_FMT_VP8:
+    case V4L2_PIX_FMT_VP9:
+        return false;
+    default:
+        break;
+    }
+    return true;
 }
 
 bool populateV4l2DevInfos(VideoPipelineInput& input, const char* v4l2Name) {
@@ -38,6 +91,9 @@ bool populateV4l2DevInfos(VideoPipelineInput& input, const char* v4l2Name) {
             fmt.index = 0;
             fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             while(ioctl(fd, VIDIOC_ENUM_FMT, &fmt) == 0) {
+                if(!pixelFormatIsSupported(fmt.pixelformat)) {
+                    continue;
+                }
                 frmsize.pixel_format = fmt.pixelformat;
                 frmsize.index = 0;
                 while(ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) == 0) {
@@ -69,7 +125,28 @@ bool populateV4l2DevInfos(VideoPipelineInput& input, const char* v4l2Name) {
         close(fd);
     }
     
+    std::sort(input.videoFormats.begin(), input.videoFormats.end(), videoFormatsSortFunction);
+    
     return input.videoFormats.size() > 0;
+}
+
+V4L2UdevMonitor::V4L2UdevMonitor() {
+    udev = udev_new();
+    udevMonitor = udev_monitor_new_from_netlink(udev, "udev");
+    udev_monitor_filter_add_match_subsystem_devtype(udevMonitor, "video4linux", NULL);
+    udev_monitor_enable_receiving(udevMonitor);
+    if(!updateV4L2DeviceList()) {
+        v4l2DeviceList = probeDevices();
+    }
+}
+    
+V4L2UdevMonitor::~V4L2UdevMonitor() {
+    udev_monitor_unref(udevMonitor);
+    udev_unref(udev);
+}
+
+std::vector<VideoPipelineInput> V4L2UdevMonitor::getV4l2DeviceList() {
+    return v4l2DeviceList;
 }
 
 std::vector<VideoPipelineInput> V4L2UdevMonitor::probeDevices() {
