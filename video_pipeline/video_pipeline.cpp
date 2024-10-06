@@ -4,6 +4,22 @@
 
 extern GMainLoop* mainloop;
 
+std::string getMessageSourceDescription(GstMessage* msg) {
+    std::string sourceDescription = " from ";
+    if(msg->src && msg->src->name) {
+        sourceDescription.append(msg->src->name);
+    }
+    sourceDescription.append(" of type ");
+    if(msg->src) {
+        sourceDescription.append(G_OBJECT_TYPE_NAME(msg->src));
+    }
+    else {
+        sourceDescription.append("unknown");
+    }
+    
+    return sourceDescription;
+}
+
 static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
     GMainLoop* mainloop = (GMainLoop *) data;
 
@@ -20,13 +36,27 @@ static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
         gst_message_parse_error(msg, &error, &debug);
         g_free(debug);
 
-        std::cout << "Error: " << error->message << std::endl;
+        std::cout << "Error " << error->code << getMessageSourceDescription(msg) << ": " << error->message << std::endl;
         g_error_free(error);
         
         g_main_loop_quit(mainloop);
 
         break;
     }
+    
+    case GST_MESSAGE_WARNING: {
+        gchar  *debug;
+        GError *error;
+
+        gst_message_parse_warning(msg, &error, &debug);
+        g_free(debug);
+
+        std::cout << "Warning " << error->code << getMessageSourceDescription(msg) << ": " << error->message << std::endl;
+        g_error_free(error);
+
+        break;
+    }
+    
     default:
         break;
     }
