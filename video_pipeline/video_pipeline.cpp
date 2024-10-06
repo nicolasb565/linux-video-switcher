@@ -3,7 +3,6 @@
 #include "video_pipeline.h"
 
 extern GMainLoop* mainloop;
-gboolean handleDbusMessages(gpointer user_data);
 
 static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
     GMainLoop* mainloop = (GMainLoop *) data;

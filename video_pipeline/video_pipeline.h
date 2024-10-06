@@ -5,18 +5,7 @@
 #include <gst/gst.h>
 #include <glib.h>
 
-enum class VideoPipelineInputType {
-    TESTPATTERN, V4L2_CAMERA
-};
-
-struct VideoPipelineInput {
-    std::string name;
-    VideoPipelineInputType type;
-    union {
-        int pattern;
-        int videodevNo;
-    } id;
-};
+#include "v4l2-udev.h"
 
 class VideoPipeline {
 public:
