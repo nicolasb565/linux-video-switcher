@@ -1,7 +1,5 @@
 #include <iostream>
 
-#include <gst/video/video-format.h>
-
 #include "video_pipeline.h"
 
 extern GMainLoop* mainloop;
