@@ -53,8 +53,9 @@ static gboolean updateV4l2DeviceList(gpointer user_data) {
 
 static void restartVideoPipeline() {
     VideoPipeline& pipeline = VideoPipeline::getInstance();
+    V4L2UdevMonitor& v4l2DevMonitor = V4L2UdevMonitor::getInstance();
     pipeline.destroyPipeline();
-    pipeline.createPipeline();
+    pipeline.createPipeline(v4l2DevMonitor.getV4l2DeviceList());
     pipeline.setPipelineState(GST_STATE_PLAYING);
 }
 

@@ -57,8 +57,9 @@ bool pixelFormatIsSupported(uint32_t pixelformat) {
     //we assume all uncompressed formats are supported
     //videoconvert should handle any issues
     
-    //we do not support compressed formats other than jpeg/mjpg for now
+    //we do not support compressed formats other than jpeg for now
     switch(pixelformat) {
+    case V4L2_PIX_FMT_MJPEG:
     case V4L2_PIX_FMT_H264:
     case V4L2_PIX_FMT_H264_NO_SC:
     case V4L2_PIX_FMT_H264_MVC:
@@ -92,6 +93,7 @@ bool populateV4l2DevInfos(VideoPipelineInput& input, const char* v4l2Name) {
             fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             while(ioctl(fd, VIDIOC_ENUM_FMT, &fmt) == 0) {
                 if(!pixelFormatIsSupported(fmt.pixelformat)) {
+                    fmt.index++;
                     continue;
                 }
                 frmsize.pixel_format = fmt.pixelformat;

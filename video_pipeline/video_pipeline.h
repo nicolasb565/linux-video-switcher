@@ -22,11 +22,12 @@ public:
     bool removeInput(VideoPipelineInput input);
     bool selectInput(VideoPipelineInput input);
     void setPipelineState(GstState state);
-    void createPipeline();
+    void createPipeline(std::vector<VideoPipelineInput> inputs);
     void destroyPipeline();
     
 protected:
     GstElement* pipeline = NULL;
+    GstElement* input_selector;
 private:
     VideoPipeline() {}
     guint bus_watch_id;

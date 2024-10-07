@@ -49,3 +49,5 @@ private:
     struct udev* udev = nullptr;
     struct udev_monitor* udevMonitor = nullptr;
 };
+
+bool pixelformatIsCompressed(uint32_t pixelformat);
